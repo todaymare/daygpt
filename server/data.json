@@ -1,26 +1,4 @@
 {
-  "next_id": 1004,
-  "questions": [
-    {
-      "id": 1001,
-      "username": "ecto_gremlin",
-      "question": "what language should i learn if i want to make a game?",
-      "answer": "whatever keeps you opening the editor. but if you want a real answer: c# with godot or c++ with raylib. ravioli is built on raylib and it's a joy to work with.",
-      "answered_at": "2026-06-08T15:00:00.000Z"
-    },
-    {
-      "id": 1002,
-      "username": "rust_ferris",
-      "question": "how long did it take you to be productive in rust?",
-      "answer": "about a month of fighting the borrow checker before it clicked. after that, the compiler becomes your pair programmer instead of your enemy.",
-      "answered_at": "2026-06-05T12:00:00.000Z"
-    },
-    {
-      "id": 1003,
-      "username": "margarine_enjoyer",
-      "question": "what's your setup look like?",
-      "answer": "kitty terminal, neovim, tmux, wezterm. all on a mac mini. nothing fancy but it gets out of my way.",
-      "answered_at": "2026-05-29T10:30:00.000Z"
-    }
-  ]
+  "next_id": 1000,
+  "questions": []
 }
