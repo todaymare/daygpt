@@ -228,9 +228,32 @@
             margin-bottom: 1.5rem;
             padding-bottom: 1.5rem;
             border-bottom: 1px solid var(--color-primary);
+            position: relative;
         }
 
         .qa-card:last-child { border-bottom: none; }
+
+        .dismiss-btn {
+            position: absolute;
+            top: 0;
+            right: 0.6rem;
+            background: none;
+            border: none;
+            color: var(--color-accent);
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 0.25rem 0.4rem;
+            border-radius: 0.3rem;
+            transition: background 0.15s, color 0.15s;
+            opacity: 0.4;
+            line-height: 1;
+        }
+
+        .dismiss-btn:hover {
+            background: var(--color-primary);
+            color: var(--color-text);
+            opacity: 1;
+        }
 
         .question {
             display: flex;
@@ -265,6 +288,7 @@
             color: var(--color-accent);
             margin-bottom: 0.15rem;
         }
+
 
         .answer .a-text {
             line-height: 1.5;
@@ -396,7 +420,7 @@
                 try {
                     const d = JSON.parse(raw);
                     questions = d.questions || [];
-                    pending = d.pending || [];
+                    pending = (d.pending || []).map(p => ({ ...p, id: p.id || Date.now() + Math.random() }));
                     if (d.username && !username) {
                         username = d.username;
                         localStorage.setItem(NAME_KEY, username);
@@ -538,6 +562,9 @@
             let html = "";
             for (const q of all) {
                 html += `<div class="qa-card">`;
+                if (q.pending) {
+                    html += `<button class="dismiss-btn" data-id="${q.id}" aria-label="Dismiss">✕</button>`;
+                }
                 html += `<div class="question">`;
                 html += `<div class="avatar"><img src="${avatarUrl(q.username)}" alt="${esc(q.username)}" loading="lazy"></div>`;
                 html += `<div class="q-text"><span class="username">${esc(q.username)}</span>${esc(q.question)}</div>`;
@@ -625,6 +652,12 @@
             loadMockData();
         }
 
+        function dismissPending(id) {
+            pending = pending.filter(p => p.id !== id);
+            saveData();
+            render();
+        }
+
         async function submitQuestion(text) {
             const q = { id: Date.now(), username, question: text, pending: true };
             pending.push(q);
@@ -642,7 +675,7 @@
                 if (res.ok) {
                     const server = await res.json();
                     pending = pending.filter(p => p.id !== q.id);
-                    pending.push({ ...server, pending: true });
+                    pending.push({ ...server, pending: true, id: q.id });
                     saveData();
                     render();
                 } else {
@@ -741,6 +774,14 @@
         };
 
         observePending();
+
+        document.getElementById("feed").addEventListener("click", (e) => {
+            const btn = e.target.closest(".dismiss-btn");
+            if (btn) {
+                const id = Number(btn.dataset.id);
+                dismissPending(id);
+            }
+        });
 
         // ── Health check ──
 

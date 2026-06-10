@@ -374,8 +374,10 @@ async function loadPending() {
             html += `<textarea placeholder="write your answer..." class="answer-input"></textarea>`;
             html += `<div class="btn-row">`;
             html += `<div class="error" style="display:none"></div>`;
+            html += `<div style="display:flex;gap:0.4rem">`;
+            html += `<button class="btn btn-ghost btn-delete">Delete</button>`;
             html += `<button class="btn btn-primary btn-answer">Reply</button>`;
-            html += `</div></div>`;
+            html += `</div></div></div>`;
         }
         list.innerHTML = html;
 
@@ -384,6 +386,38 @@ async function loadPending() {
             const input = card.querySelector(".answer-input");
             const btn = card.querySelector(".btn-answer");
             const err = card.querySelector(".error");
+            const del = card.querySelector(".btn-delete");
+            del.addEventListener("click", async () => {
+                if (!confirm("Delete this question?")) return;
+                del.disabled = true;
+                del.textContent = "deleting...";
+                err.style.display = "none";
+                try {
+                    const res = await fetch(`${API}/api/admin/question/${id}`, {
+                        method: "DELETE",
+                        headers: { "Authorization": `Bearer ${adminKey}` },
+                    });
+                    if (res.ok) {
+                        card.classList.add("removing");
+                        setTimeout(() => {
+                            card.remove();
+                            showToast("deleted");
+                            const remaining = list.querySelectorAll(".q-card").length;
+                            if (remaining === 0) list.innerHTML = '<div class="empty">all clear ✨</div>';
+                        }, 300);
+                    } else {
+                        err.textContent = "failed to delete";
+                        err.style.display = "";
+                        del.disabled = false;
+                        del.textContent = "Delete";
+                    }
+                } catch (e) {
+                    err.textContent = "network error";
+                    err.style.display = "";
+                    del.disabled = false;
+                    del.textContent = "Delete";
+                }
+            });
             btn.addEventListener("click", async () => {
                 const answer = input.value.trim();
                 if (!answer) return;
