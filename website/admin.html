@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>daygpt admin</title>
+<link rel="stylesheet" href="../../../styles.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    max-width: 36rem;
+    margin: 0 auto;
+    padding: 0 0.8rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* ── Header ── */
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--color-dark);
+    position: relative;
+    flex-shrink: 0;
+}
+
+.header h1 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin: 0;
+}
+
+.header h1 .accent { color: var(--color-accent); }
+.header h1 .dim { color: var(--color-dark); }
+
+.back-link {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-accent);
+    font-size: 0.8rem;
+    text-decoration: none;
+    opacity: 0.7;
+    transition: opacity 0.15s;
+}
+.back-link:hover { opacity: 1; }
+
+/* ── Login ── */
+
+#login {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 0.8rem;
+    padding-bottom: 4rem;
+}
+
+#login .lock { font-size: 1.4rem; color: var(--color-accent); margin-bottom: 0.3rem; }
+#login .hint { font-size: 0.8rem; color: var(--color-accent); margin-bottom: 0.5rem; }
+
+#login .field {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+#login input {
+    background: var(--color-primary);
+    border: 1px solid var(--color-dark);
+    color: var(--color-text);
+    padding: 0.6rem 0.8rem;
+    border-radius: 0.4rem;
+    font-size: 0.9rem;
+    width: 16rem;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.15s;
+}
+#login input:focus { border-color: var(--color-accent); }
+
+/* ── Main content (logged in) ── */
+
+#main { display: none; flex-direction: column; flex: 1; }
+
+.admin-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0;
+    font-size: 0.85rem;
+    color: var(--color-accent);
+}
+
+#logout {
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: var(--color-accent);
+    opacity: 0.6;
+    transition: opacity 0.15s;
+    background: none;
+    border: none;
+    font-family: inherit;
+    padding: 0;
+}
+#logout:hover { opacity: 1; }
+
+/* ── Pending list ── */
+
+#pending-list { flex: 1; overflow-y: auto; padding-bottom: 1rem; }
+
+.q-card {
+    border: 1px solid var(--color-dark);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.8rem;
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+.q-card.removing {
+    opacity: 0;
+    transform: translateX(1rem);
+}
+
+.q-meta {
+    font-size: 0.7rem;
+    color: var(--color-accent);
+    margin-bottom: 0.25rem;
+}
+
+.q-text {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 0.8rem;
+}
+
+.q-card textarea {
+    width: 100%;
+    background: var(--color-primary);
+    border: 1px solid var(--color-dark);
+    color: var(--color-text);
+    padding: 0.5rem 0.7rem;
+    border-radius: 0.4rem;
+    font-size: 0.85rem;
+    font-family: inherit;
+    resize: vertical;
+    outline: none;
+    min-height: 2.8rem;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+}
+.q-card textarea:focus { border-color: var(--color-accent); }
+
+.btn-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+}
+
+.q-card .error {
+    font-size: 0.75rem;
+    color: #f87171;
+}
+
+/* ── Empty state ── */
+
+.empty {
+    text-align: center;
+    padding: 3rem 0;
+    color: var(--color-accent);
+    font-size: 0.9rem;
+}
+
+.loading {
+    text-align: center;
+    padding: 3rem 0;
+    color: var(--color-accent);
+    font-size: 0.8rem;
+    opacity: 0.6;
+}
+
+/* ── Toast ── */
+
+#toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(0.5rem);
+    background: var(--color-dark);
+    color: var(--color-text);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+}
+#toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ── Buttons (from main chat page) ── */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--color-dark);
+    border-radius: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    font-family: inherit;
+    outline: none;
+}
+
+.btn-primary {
+    background: var(--color-accent);
+    color: var(--color-bg);
+}
+.btn-primary:hover { background: #b8c9a8; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-ghost {
+    background: transparent;
+    color: var(--color-accent);
+}
+.btn-ghost:hover {
+    background: var(--color-primary);
+    color: var(--color-text);
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <a class="back-link" href="/demos/daygpt/website/">← back</a>
+    <h1><span class="accent">◆</span> daygpt <span class="dim">admin</span></h1>
+</div>
+
+<!-- Login screen -->
+<div id="login">
+    <div class="lock">◆</div>
+    <div class="hint">enter your admin key</div>
+    <div class="field">
+        <input id="key-input" type="password" placeholder="key..." autocomplete="off">
+        <button class="btn btn-primary" id="btn-login">Login</button>
+    </div>
+    <div id="key-error" class="error" style="font-size:0.75rem;color:#f87171;display:none"></div>
+</div>
+
+<!-- Main content -->
+<div id="main">
+    <div class="admin-bar">
+        <span>pending questions</span>
+        <button id="logout">logout</button>
+    </div>
+    <div id="pending-list">
+        <div class="loading">loading...</div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = "https://gpt.daymare.net";
+let adminKey = sessionStorage.getItem("daygpt_admin_key");
+
+const login = document.getElementById("login");
+const main = document.getElementById("main");
+const logout = document.getElementById("logout");
+const list = document.getElementById("pending-list");
+const keyInput = document.getElementById("key-input");
+const keyError = document.getElementById("key-error");
+const toast = document.getElementById("toast");
+
+let toastTimer;
+
+function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add("visible");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("visible"), 2500);
+}
+
+function esc(s) {
+    const d = document.createElement("div");
+    d.textContent = s;
+    return d.innerHTML;
+}
+
+function showLogin(err) {
+    login.style.display = "flex";
+    main.style.display = "none";
+    if (err) { keyError.textContent = err; keyError.style.display = ""; }
+}
+
+function showMain() {
+    login.style.display = "none";
+    main.style.display = "flex";
+    keyError.style.display = "none";
+}
+
+if (adminKey) { showMain(); loadPending(); }
+
+document.getElementById("btn-login").addEventListener("click", () => {
+    const key = keyInput.value.trim();
+    if (!key) return;
+    adminKey = key;
+    sessionStorage.setItem("daygpt_admin_key", key);
+    showMain();
+    loadPending();
+});
+
+keyInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") document.getElementById("btn-login").click();
+});
+
+logout.addEventListener("click", () => {
+    adminKey = null;
+    sessionStorage.removeItem("daygpt_admin_key");
+    showLogin();
+    keyInput.value = "";
+    keyInput.focus();
+});
+
+async function loadPending() {
+    list.innerHTML = '<div class="loading">loading...</div>';
+    try {
+        const res = await fetch(`${API}/api/admin/pending`, {
+            headers: { "Authorization": `Bearer ${adminKey}` },
+        });
+        if (res.status === 401) {
+            sessionStorage.removeItem("daygpt_admin_key");
+            adminKey = null;
+            showLogin("invalid key");
+            return;
+        }
+        if (!res.ok) {
+            list.innerHTML = '<div class="empty">failed to load</div>';
+            return;
+        }
+        const data = await res.json();
+        if (data.length === 0) {
+            list.innerHTML = '<div class="empty">all clear ✨</div>';
+            return;
+        }
+        let html = "";
+        for (const q of data) {
+            html += `<div class="q-card" data-id="${q.id}">`;
+            html += `<div class="q-meta">#${q.id} &middot; ${esc(q.username)}</div>`;
+            html += `<div class="q-text">${esc(q.question)}</div>`;
+            html += `<textarea placeholder="write your answer..." class="answer-input"></textarea>`;
+            html += `<div class="btn-row">`;
+            html += `<div class="error" style="display:none"></div>`;
+            html += `<button class="btn btn-primary btn-answer">Reply</button>`;
+            html += `</div></div>`;
+        }
+        list.innerHTML = html;
+
+        for (const card of list.querySelectorAll(".q-card")) {
+            const id = parseInt(card.dataset.id);
+            const input = card.querySelector(".answer-input");
+            const btn = card.querySelector(".btn-answer");
+            const err = card.querySelector(".error");
+            btn.addEventListener("click", async () => {
+                const answer = input.value.trim();
+                if (!answer) return;
+                btn.disabled = true;
+                btn.textContent = "sending...";
+                err.style.display = "none";
+                try {
+                    const res = await fetch(`${API}/api/admin/answer`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminKey}` },
+                        body: JSON.stringify({ question_id: id, answer }),
+                    });
+                    if (res.ok) {
+                        card.classList.add("removing");
+                        setTimeout(() => {
+                            card.remove();
+                            showToast("answered!");
+                            const remaining = list.querySelectorAll(".q-card").length;
+                            if (remaining === 0) list.innerHTML = '<div class="empty">all clear ✨</div>';
+                        }, 300);
+                    } else {
+                        err.textContent = "failed to send";
+                        err.style.display = "";
+                    }
+                } catch (e) {
+                    err.textContent = "network error";
+                    err.style.display = "";
+                }
+                btn.disabled = false;
+                btn.textContent = "Reply";
+            });
+            input.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" && e.metaKey) btn.click();
+            });
+        }
+    } catch (e) {
+        list.innerHTML = '<div class="empty">could not reach server</div>';
+    }
+}
+</script>
+</body>
+</html>

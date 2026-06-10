@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>daygpt – daymare.net</title>
+    <link rel="stylesheet" href="../../../styles.css">
+    <link rel="stylesheet" href="../../../blog_styles.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-size: 15px;
+            padding-bottom: 0;
+        }
+
+        #name-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--color-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: opacity 0.3s;
+        }
+
+        #name-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #name-prompt { text-align: center; padding: 2rem; }
+
+        #name-prompt h1 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        #name-prompt p {
+            color: var(--color-accent);
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        #name-input {
+            background: var(--color-primary);
+            border: 1px solid var(--color-dark);
+            color: var(--color-text);
+            padding: 0.7rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            width: 100%;
+            max-width: 18rem;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        #name-input:focus { border-color: var(--color-accent); }
+        #name-input::placeholder { color: var(--color-accent); }
+
+        .name-buttons {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 0.8rem;
+        }
+
+        .btn {
+            background: var(--color-dark);
+            color: var(--color-text);
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .btn:hover {
+            background: var(--color-accent);
+            color: var(--color-bg);
+        }
+
+        .btn-primary {
+            background: var(--color-accent);
+            color: var(--color-bg);
+            font-weight: 600;
+        }
+
+        .btn-primary:hover { background: #b8c9a8; }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--color-accent);
+        }
+
+        .btn-ghost:hover {
+            background: var(--color-primary);
+            color: var(--color-text);
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-width: 36rem;
+            margin: 0 auto;
+            padding: 0 0.8rem;
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--color-dark);
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .title-group {
+            text-align: center;
+        }
+
+        .title-group h1 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            margin: 0;
+        }
+
+        .title-group span { color: var(--color-accent); }
+
+        #health-dot { transition: color 0.3s; }
+        #health-dot.up { color: #4ade80; }
+        #health-dot.down { color: #f87171; }
+
+        .title-group .subtitle {
+            font-size: 0.75rem;
+            color: var(--color-accent);
+            margin-top: 0.15rem;
+        }
+
+        .user-badge {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .user-badge .name {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--color-accent);
+        }
+
+        .avatar, .avatar-wrap {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.35rem;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: var(--color-primary);
+        }
+
+        .avatar-wrap { position: relative; }
+
+        .avatar img, .avatar-wrap img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+            transition: opacity 0.15s;
+        }
+
+        .avatar-wrap .change-icon {
+            position: absolute;
+            inset: 0;
+            background: var(--color-dark);
+            color: var(--color-text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .avatar-wrap:hover img { opacity: 0; }
+        .avatar-wrap:hover .change-icon { opacity: 1; }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        .thinking {
+            animation: pulse 1.5s ease-in-out infinite;
+            color: var(--color-accent);
+            font-style: italic;
+        }
+
+        .thinking-text {
+            transition: opacity 0.25s, transform 0.25s;
+        }
+
+
+
+        #feed {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0;
+        }
+
+        #feed::-webkit-scrollbar { width: 4px; }
+        #feed::-webkit-scrollbar-track { background: transparent; }
+        #feed::-webkit-scrollbar-thumb {
+            background: var(--color-dark);
+            border-radius: 2px;
+        }
+
+        .qa-card {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--color-primary);
+        }
+
+        .qa-card:last-child { border-bottom: none; }
+
+        .question {
+            display: flex;
+            gap: 0.6rem;
+            align-items: flex-start;
+        }
+
+        .q-text {
+            line-height: 1.5;
+            padding-top: 0.25rem;
+            word-break: break-word;
+        }
+
+        .q-text .username {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--color-accent);
+            display: block;
+            margin-bottom: 0.1rem;
+        }
+
+        .answer {
+            margin-top: 0.6rem;
+            margin-left: 2.6rem;
+            padding-left: 0.8rem;
+            border-left: 2px solid var(--color-dark);
+        }
+
+        .answer .a-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--color-accent);
+            margin-bottom: 0.15rem;
+        }
+
+        .answer .a-text {
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .answer-timestamp {
+            font-size: 0.7rem;
+            color: var(--color-accent);
+            margin-top: 0.3rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--color-accent);
+        }
+
+        .empty-state p { font-size: 0.9rem; }
+
+        #toast {
+            position: fixed;
+            bottom: 5rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(1rem);
+            background: var(--color-primary);
+            color: var(--color-text);
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--color-dark);
+            font-size: 0.85rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s, transform 0.25s;
+            z-index: 50;
+            white-space: nowrap;
+        }
+
+        #toast.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .input-bar {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.7rem 0;
+            border-top: 1px solid var(--color-dark);
+            flex-shrink: 0;
+        }
+
+        .input-bar input {
+            flex: 1;
+            background: var(--color-primary);
+            border: 1px solid var(--color-dark);
+            color: var(--color-text);
+            padding: 0.65rem 0.9rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .input-bar input:focus { border-color: var(--color-accent); }
+        .input-bar input::placeholder { color: var(--color-accent); }
+
+        .input-bar .btn {
+            padding: 0.65rem 1.1rem;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 30rem) {
+            #app { padding: 0 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Name Prompt -->
+    <div id="name-overlay" class="hidden">
+        <div id="name-prompt">
+            <h1>daygpt</h1>
+            <p>ask me anything. put your name on it if you're brave</p>
+            <input id="name-input" type="text" placeholder="enter your name" maxlength="30" autocomplete="off">
+            <div class="name-buttons">
+                <button class="btn btn-ghost" id="btn-anonymous">stay anonymous</button>
+                <button class="btn btn-primary" id="btn-start">ready</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app">
+        <div class="chat-header">
+            <div class="title-group">
+                <h1><span id="health-dot">◆</span> daygpt</h1>
+                <div class="subtitle">questions answered publicly</div>
+            </div>
+            <div class="user-badge" id="user-badge"></div>
+        </div>
+
+        <div id="feed"></div>
+
+        <div class="input-bar">
+            <input id="question-input" type="text" placeholder="ask anything" maxlength="500" autocomplete="off">
+            <button class="btn btn-primary" id="btn-send">Send</button>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+        const API_BASE = "https://gpt.daymare.net";
+        const NAME_KEY = "daygpt_username";
+        const DAYGPT_KEY = "daygpt_data";
+        const DICEBEAR_BASE = "https://api.dicebear.com/10.x/initial-face/svg?backgroundColorFill=linear&backgroundColorFillStops=2";
+
+        let questions = [];
+        let pending = [];
+        let username = localStorage.getItem(NAME_KEY);
+
+        function saveData() {
+            localStorage.setItem(DAYGPT_KEY, JSON.stringify({ questions, pending, username }));
+        }
+
+        function loadSavedData() {
+            const raw = localStorage.getItem(DAYGPT_KEY);
+            if (raw) {
+                try {
+                    const d = JSON.parse(raw);
+                    questions = d.questions || [];
+                    pending = d.pending || [];
+                    if (d.username && !username) {
+                        username = d.username;
+                        localStorage.setItem(NAME_KEY, username);
+                    }
+                    return true;
+                } catch (e) {}
+            }
+            return false;
+        }
+
+        // ── Name Prompt ──
+
+        function showNamePrompt() {
+            document.getElementById("name-overlay").classList.remove("hidden");
+        }
+
+        function hideNamePrompt() {
+            document.getElementById("name-overlay").classList.add("hidden");
+        }
+
+        function setUsername(name) {
+            username = name.trim() || "Anonymous";
+            localStorage.setItem(NAME_KEY, username);
+            document.getElementById("name-input").value = "";
+            hideNamePrompt();
+            updateUserBadge();
+        }
+
+        function changeName() {
+            username = null;
+            localStorage.removeItem(NAME_KEY);
+            updateUserBadge();
+            showNamePrompt();
+        }
+
+        function updateUserBadge() {
+            const badge = document.getElementById("user-badge");
+            if (username) {
+                badge.innerHTML = `<span class="name">${esc(username)}</span><div class="avatar avatar-wrap"><img src="${avatarUrl(username)}" alt="" loading="lazy"><div class="change-icon">✎</div></div>`;
+                badge.onclick = changeName;
+                badge.style.cursor = "pointer";
+            } else {
+                badge.innerHTML = "";
+                badge.onclick = null;
+                badge.style.cursor = "default";
+            }
+        }
+
+        document.getElementById("btn-start").addEventListener("click", () => {
+            const name = document.getElementById("name-input").value;
+            if (name.trim()) {
+                setUsername(name);
+            } else {
+                document.getElementById("name-input").focus();
+            }
+        });
+
+        document.getElementById("btn-anonymous").addEventListener("click", () => {
+            setUsername("Anonymous");
+        });
+
+        document.getElementById("name-input").addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                const name = document.getElementById("name-input").value;
+                if (name.trim()) setUsername(name);
+            }
+        });
+
+        if (!username) {
+            showNamePrompt();
+        }
+
+        updateUserBadge();
+
+        // ── Deterministic avatars via DiceBear ──
+
+        function hashStr(s) {
+            let h = 0;
+            for (let i = 0; i < s.length; i++) {
+                h = ((h << 5) - h) + s.charCodeAt(i);
+                h |= 0;
+            }
+            return Math.abs(h);
+        }
+
+        function avatarUrl(seed) {
+            const h = hashStr(seed);
+            return `${DICEBEAR_BASE}&backgroundColorAngle=${h % 360}&seed=${h}`;
+        }
+
+        // ── Rendering ──
+
+        const THINKING = [
+            "thinking...",
+            "contemplating...",
+            "consulting the spirits...",
+            "reading your mind...",
+            "asking the magic 8-ball...",
+            "weighing options...",
+            "formulating response...",
+            "processing...",
+            "connecting dots...",
+            "consulting the ancients...",
+            "brewing tea...",
+            "polishing thoughts...",
+            "searching the archives...",
+            "casting a spell...",
+            "pondering...",
+            "deciphering...",
+            "compiling wisdom...",
+            "channeling energy...",
+            "preparing a hot take...",
+            "looking into the void...",
+            "warming up the neurons...",
+            "gazing at the stars...",
+        ];
+
+        function thinkingMsg(text) {
+            let h = 0;
+            for (let i = 0; i < text.length; i++) {
+                h = ((h << 5) - h) + text.charCodeAt(i);
+                h |= 0;
+            }
+            const hh = Math.abs(h);
+            const bucket = 2500 + (hh % 3000);
+            const t = Math.floor((Date.now() + hh) / bucket);
+            return THINKING[(hh + t) % THINKING.length];
+        }
+
+        function render() {
+            const feed = document.getElementById("feed");
+            const all = [...questions, ...pending];
+
+            if (all.length === 0) {
+                feed.innerHTML = '<div class="empty-state"><p>no questions yet :(</p></div>';
+                return;
+            }
+
+            let html = "";
+            for (const q of all) {
+                html += `<div class="qa-card">`;
+                html += `<div class="question">`;
+                html += `<div class="avatar"><img src="${avatarUrl(q.username)}" alt="${esc(q.username)}" loading="lazy"></div>`;
+                html += `<div class="q-text"><span class="username">${esc(q.username)}</span>${esc(q.question)}</div>`;
+                html += `</div>`;
+                html += `<div class="answer">`;
+                if (q.pending) {
+                    html += `<div><div class="a-header">daygpt</div><div class="thinking" style="animation-delay:${-(hashStr(q.question) % 1500)}ms" data-question="${esc(q.question)}"><span class="thinking-text">${thinkingMsg(q.question)}</span></div></div>`;
+                } else {
+                    html += `<div><div class="a-header">daygpt</div><div class="a-text">${esc(q.answer)}</div><div class="answer-timestamp">answered ${esc(q.answered_at)}</div></div>`;
+                }
+                html += `</div>`;
+                html += `</div>`;
+            }
+
+            const prevScroll = feed.scrollTop;
+            const wasAtBottom = prevScroll + feed.clientHeight >= feed.scrollHeight - 2;
+
+            feed.innerHTML = html;
+
+            if (wasAtBottom || renderScrollNext) {
+                feed.scrollTop = feed.scrollHeight;
+                renderScrollNext = false;
+            }
+        }
+
+        function esc(s) {
+            const d = document.createElement("div");
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        // ── Toast ──
+
+        let toastTimer = null;
+
+        function showToast(msg) {
+            const el = document.getElementById("toast");
+            el.textContent = msg;
+            el.classList.add("visible");
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove("visible"), 3000);
+        }
+
+        // ── Mock Data ──
+
+        function loadMockData() {
+            questions = [
+                { id: 1, username: "Alex", question: "how did you learn rust?", answer: "Started with the book, then built a lot of small projects. Ravioli taught me the most about game architecture though.", answered_at: "2 days ago" },
+                { id: 2, username: "Emma", question: "will you open source daygpt?", answer: "Already is! Everything is on my git server at git.daymare.net.", answered_at: "5 days ago" },
+                { id: 3, username: "Sam", question: "what's the stack for this site?", answer: "Custom Rust static site generator, plain CSS, vanilla JS. No frameworks \u2014 keeps it fast and fun.", answered_at: "12 days ago" },
+            ];
+            render();
+        }
+
+        // ── API Layer (stubbed) ──
+
+        async function loadQuestions() {
+            if (!API_BASE) {
+                if (loadSavedData()) {
+                    render();
+                    return;
+                }
+                loadMockData();
+                saveData();
+                return;
+            }
+            const cached = loadSavedData();
+            try {
+                const res = await fetch(`${API_BASE}/api/questions`);
+                if (res.ok) {
+                    questions = await res.json();
+                    const answered = new Set(questions.map(q => q.question));
+                    pending = pending.filter(p => !answered.has(p.question));
+                    saveData();
+                    render();
+                    return;
+                }
+            } catch (e) {
+                console.error("Failed to load questions:", e);
+            }
+            if (cached) {
+                render();
+                return;
+            }
+            loadMockData();
+        }
+
+        async function submitQuestion(text) {
+            const q = { id: Date.now(), username, question: text, pending: true };
+            pending.push(q);
+            saveData();
+            render();
+
+            if (!API_BASE) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/questions`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ question: text, username }),
+                });
+                if (res.ok) {
+                    const server = await res.json();
+                    pending = pending.filter(p => p.id !== q.id);
+                    pending.push({ ...server, pending: true });
+                    saveData();
+                    render();
+                } else {
+                    pending = pending.filter(p => p.id !== q.id);
+                    saveData();
+                    render();
+                    showToast("Something went wrong. Try again?");
+                }
+            } catch (e) {
+                pending = pending.filter(p => p.id !== q.id);
+                saveData();
+                render();
+                showToast("Couldn't reach the server. Try again later.");
+            }
+        }
+
+        // ── Input ──
+
+        document.getElementById("btn-send").addEventListener("click", sendQuestion);
+        document.getElementById("question-input").addEventListener("keydown", (e) => {
+            if (e.key === "Enter") sendQuestion();
+        });
+
+        function sendQuestion() {
+            if (!username) {
+                showNamePrompt();
+                return;
+            }
+
+            const input = document.getElementById("question-input");
+            const text = input.value.trim();
+            if (!text) return;
+
+            input.value = "";
+            input.focus();
+            submitQuestion(text);
+        }
+
+        // ── Init ──
+
+        let renderScrollNext = true;
+
+        loadQuestions();
+
+        let thinkingTimers = [];
+
+        function clearThinkingTimers() {
+            for (const id of thinkingTimers) clearTimeout(id);
+            thinkingTimers = [];
+        }
+
+        function startThinkingTimer(el) {
+            const q = el.dataset.question;
+            if (!q) return;
+
+            const h = hashStr(q);
+            const bucket = 2500 + (h % 3000);
+            const phase = h % bucket;
+            const now = Date.now();
+            const nextTick = bucket - ((now + phase) % bucket);
+
+            const id = setTimeout(() => {
+                thinkingTimers = thinkingTimers.filter(t => t !== id);
+                const span = el.querySelector(".thinking-text");
+                if (!span) return;
+                const next = thinkingMsg(q);
+                if (span.textContent !== next) {
+                    span.style.opacity = "0.3";
+                    span.style.transform = "translateY(-2px)";
+                    setTimeout(() => {
+                        span.textContent = next;
+                        span.style.opacity = "";
+                        span.style.transform = "";
+                    }, 250);
+                }
+                startThinkingTimer(el);
+            }, nextTick + 50);
+
+            thinkingTimers.push(id);
+        }
+
+        function observePending() {
+            for (const el of document.querySelectorAll(".thinking")) {
+                if (!el.dataset.timerStarted) {
+                    el.dataset.timerStarted = "1";
+                    startThinkingTimer(el);
+                }
+            }
+        }
+
+        const origRender = render;
+        render = function() {
+            clearThinkingTimers();
+            origRender();
+            observePending();
+        };
+
+        observePending();
+
+        // ── Health check ──
+
+        function checkHealth() {
+            const dot = document.getElementById("health-dot");
+            if (!API_BASE) { dot.className = ""; return; }
+            fetch(`${API_BASE}/api/health`)
+                .then(r => r.ok ? dot.className = "up" : dot.className = "down")
+                .catch(() => dot.className = "down");
+        }
+
+        checkHealth();
+        setInterval(checkHealth, 30000);
+    </script>
+</body>
+</html>
