@@ -393,9 +393,10 @@ async function loadPending() {
                 del.textContent = "deleting...";
                 err.style.display = "none";
                 try {
-                    const res = await fetch(`${API}/api/admin/question/${id}`, {
-                        method: "DELETE",
-                        headers: { "Authorization": `Bearer ${adminKey}` },
+                    const res = await fetch(`${API}/api/admin/delete`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminKey}` },
+                        body: JSON.stringify({ question_id: id }),
                     });
                     if (res.ok) {
                         card.classList.add("removing");
