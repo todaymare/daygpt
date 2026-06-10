@@ -371,7 +371,7 @@ async function loadPending() {
             html += `<div class="q-card" data-id="${q.id}">`;
             html += `<div class="q-meta">#${q.id} &middot; ${esc(q.username)}</div>`;
             html += `<div class="q-text">${esc(q.question)}</div>`;
-            html += `<textarea placeholder="write your answer..." class="answer-input"></textarea>`;
+            html += `<textarea placeholder="write your answer..." class="answer-input" maxlength="4096"></textarea>`;
             html += `<div class="btn-row">`;
             html += `<div class="error" style="display:none"></div>`;
             html += `<div style="display:flex;gap:0.4rem">`;
