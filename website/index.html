@@ -400,7 +400,7 @@
     <div id="toast"></div>
 
     <script>
-        const API_BASE = "https://gpt.daymare.net";
+        const API_BASE = "https://api.daymare.net/gpt";
         const NAME_KEY = "daygpt_username";
         const DAYGPT_KEY = "daygpt_data";
         const DICEBEAR_BASE = "https://api.dicebear.com/10.x/initial-face/svg?backgroundColorFill=linear&backgroundColorFillStops=2";
@@ -632,7 +632,7 @@
             }
             const cached = loadSavedData();
             try {
-                const res = await fetch(`${API_BASE}/api/questions`);
+                const res = await fetch(`${API_BASE}/questions`);
                 if (res.ok) {
                     questions = await res.json();
                     const answered = new Set(questions.map(q => q.question));
@@ -666,7 +666,7 @@
             if (!API_BASE) return;
 
             try {
-                const res = await fetch(`${API_BASE}/api/questions`, {
+                const res = await fetch(`${API_BASE}/questions`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ question: text, username }),
@@ -718,6 +718,7 @@
         let renderScrollNext = true;
 
         loadQuestions();
+        setInterval(loadQuestions, 60000);
 
         let thinkingTimers = [];
 
@@ -787,7 +788,7 @@
         function checkHealth() {
             const dot = document.getElementById("health-dot");
             if (!API_BASE) { dot.className = ""; return; }
-            fetch(`${API_BASE}/api/health`)
+            fetch(`${API_BASE}/health`)
                 .then(r => r.ok ? dot.className = "up" : dot.className = "down")
                 .catch(() => dot.className = "down");
         }

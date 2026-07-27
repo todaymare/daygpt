@@ -9,7 +9,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body {
-    margin: 0;
+    margin: 0;  
     padding: 0;
     background: var(--color-bg);
     color: var(--color-text);
@@ -284,7 +284,7 @@ body {
 <div id="toast"></div>
 
 <script>
-const API = "https://gpt.daymare.net";
+const API = "https://api.daymare.net/gpt";
 let adminKey = sessionStorage.getItem("daygpt_admin_key");
 
 const login = document.getElementById("login");
@@ -348,7 +348,7 @@ logout.addEventListener("click", () => {
 async function loadPending() {
     list.innerHTML = '<div class="loading">loading...</div>';
     try {
-        const res = await fetch(`${API}/api/admin/pending`, {
+        const res = await fetch(`${API}/admin/pending`, {
             headers: { "Authorization": `Bearer ${adminKey}` },
         });
         if (res.status === 401) {
@@ -393,7 +393,7 @@ async function loadPending() {
                 del.textContent = "deleting...";
                 err.style.display = "none";
                 try {
-                    const res = await fetch(`${API}/api/admin/delete`, {
+                    const res = await fetch(`${API}/admin/delete`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminKey}` },
                         body: JSON.stringify({ question_id: id }),
@@ -426,7 +426,7 @@ async function loadPending() {
                 btn.textContent = "sending...";
                 err.style.display = "none";
                 try {
-                    const res = await fetch(`${API}/api/admin/answer`, {
+                    const res = await fetch(`${API}/admin/answer`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminKey}` },
                         body: JSON.stringify({ question_id: id, answer }),
